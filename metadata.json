@@ -1,0 +1,6 @@
+{
+  "name": "GitGenius Pusher",
+  "description": "A powerful client-side tool to upload local project folders to GitHub repositories using the GitHub API, featuring AI-powered commit message generation via Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
