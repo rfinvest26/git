@@ -10,7 +10,8 @@ export const deployToVercel = async (
   vercelToken: string,
   githubRepo: string, // "owner/repo"
   projectName: string,
-  onLog: (msg: string) => void
+  onLog: (msg: string) => void,
+  framework: string | null = null
 ): Promise<DeployResult> => {
   const headers = {
     Authorization: `Bearer ${vercelToken}`,
@@ -20,22 +21,24 @@ export const deployToVercel = async (
   onLog('Authenticating with Vercel...');
 
   // 1. Create or Get Project
-  // We attempt to create a project linked to the GitHub repo.
-  // If it exists, we catch the 409 Conflict and fetch the existing one.
-  
   onLog(`Configuring Vercel project "${projectName}"...`);
   
-  // Clean project name (Vercel requires lowercase, max 100 chars, etc.)
   const cleanName = projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').substring(0, 100);
 
-  const createBody = {
+  const createBody: any = {
     name: cleanName,
     gitRepository: {
       type: 'github',
       repo: githubRepo,
     },
-    framework: null // Let Vercel auto-detect (Next.js, CRA, etc.)
+    framework: framework || null
   };
+
+  // If it's a known framework, we can set standard build settings
+  if (framework === 'vite') {
+    createBody.buildCommand = 'npm run build';
+    createBody.outputDirectory = 'dist';
+  }
 
   let projectData: any;
 

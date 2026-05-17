@@ -195,16 +195,31 @@ export default function App() {
     setLogs([]); // Reset logs for deploy
     addLog("Initializing Vercel deployment...", 'info');
 
+    // Simple framework detection
+    let detectedFramework: string | null = null;
+    const hasVite = files.some(f => f.path.toLowerCase().includes('vite.config'));
+    const hasPackageJson = files.some(f => f.path === 'package.json');
+    
+    if (hasVite) {
+      detectedFramework = 'vite';
+      addLog("Detected Vite project structure.", 'info');
+    } else if (hasPackageJson) {
+      detectedFramework = 'other';
+      addLog("Detected Node.js project.", 'info');
+    }
+
     try {
       const result = await vercelService.deployToVercel(
         vercelToken,
         `${repoOwner}/${repoName}`,
         repoName,
-        (msg) => addLog(msg, 'info')
+        (msg) => addLog(msg, 'info'),
+        detectedFramework
       );
       setDeployResult(result);
       setStatus(UploadStatus.SUCCESS);
-      addLog("Deployment configured successfully!", 'success');
+      addLog("Vercel project linked successfully!", 'success');
+      addLog(`Your app will be available at: ${result.url}`, 'success');
     } catch (error: any) {
       console.error(error);
       setStatus(UploadStatus.ERROR);
@@ -589,9 +604,19 @@ export default function App() {
                   <h3 className="text-2xl font-bold text-white mb-2">Deploy to Vercel</h3>
                   <p className="text-slate-400 text-sm">
                     Link your GitHub repository to Vercel to enable continuous deployment.
-                    <br/>
-                    <span className="text-xs text-yellow-500/80">Note: Ensure "Vercel" is installed on your GitHub account.</span>
                   </p>
+                  {repoName && (
+                    <div className="mt-3">
+                      <a 
+                        href={`https://github.com/${repoOwner}/${repoName}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-xs bg-slate-900 border border-slate-700 rounded-full px-3 py-1 text-slate-400 hover:text-white hover:border-slate-500 transition-all inline-flex items-center gap-1"
+                      >
+                        <span>🐙 github.com/{repoOwner}/{repoName}</span>
+                      </a>
+                    </div>
+                  )}
                </div>
 
                <div className="space-y-2">
@@ -615,19 +640,23 @@ export default function App() {
                    Deploy Project
                  </button>
                ) : (
-                  <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 h-48 overflow-y-auto">
+                  <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 h-64 overflow-y-auto overflow-x-hidden">
                     {status === UploadStatus.SUCCESS && deployResult ? (
                        <div className="flex flex-col items-center justify-center h-full text-center">
                          <span className="text-4xl mb-2">🚀</span>
-                         <h4 className="font-bold text-white">Project Created!</h4>
-                         <a href={deployResult.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline mt-1 font-mono text-sm">{deployResult.url}</a>
-                         <a href={deployResult.dashboardUrl} target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:text-white mt-2 border border-slate-700 px-2 py-1 rounded">Open Dashboard</a>
-                         <button onClick={reset} className="mt-4 text-xs text-slate-600 hover:text-slate-400">Start Over</button>
+                         <h4 className="font-bold text-white">Project Connected!</h4>
+                         <p className="text-[10px] text-slate-500 max-w-[250px] mt-1 mb-3">Vercel will start building your project. It may take a minute to become active.</p>
+                         <a href={deployResult.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline font-mono text-sm mb-2 truncate w-full px-2">{deployResult.url}</a>
+                         <div className="flex gap-2">
+                           <a href={deployResult.dashboardUrl} target="_blank" rel="noreferrer" className="text-xs text-slate-400 hover:text-white border border-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">Vercel Dashboard</a>
+                           <a href={`https://github.com/${repoOwner}/${repoName}`} target="_blank" rel="noreferrer" className="text-xs text-slate-400 hover:text-white border border-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">GitHub Repo</a>
+                         </div>
+                         <button onClick={reset} className="mt-6 text-xs text-slate-600 hover:text-slate-400">← Back to Projects</button>
                        </div>
                     ) : (
-                      <div className="font-mono text-xs space-y-1">
+                      <div className="font-mono text-[10px] space-y-1">
                         {logs.map((log, i) => (
-                          <div key={i} className={`${
+                           <div key={i} className={`${
                             log.type === 'error' ? 'text-red-400' : 
                             log.type === 'success' ? 'text-green-400' : 'text-slate-400'
                           }`}>
